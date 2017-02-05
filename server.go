@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"github.com/Junbong/mankato-server/db"
 )
 
 const (
@@ -24,12 +25,17 @@ func main() {
 	log.Println("Project Mankato", version)
 	log.Printf("Running with... %s:%d\n", *host, *port)
 	
-	// Initialize cache
+	// Initialize database
+	db.New()
+	//db.Put("bong", "foo", "bar")
+	//db.Put("bong", "foo1", "bar1")
+	//db.Put("newday", "has", "come")
 	
 	// Start router & server
+	watchSysSigs(shutdownGraceful)
 	
 	// Watch system signal
-	watchSysSigs(shutdownGraceful)
+	BeginRoute(*host, *port)
 }
 
 
