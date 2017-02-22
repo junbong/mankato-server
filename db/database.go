@@ -1,14 +1,19 @@
 package db
 
-import "fmt"
+import (
+	"time"
+	"log"
+	"github.com/emirpasic/gods/maps/hashmap"
+)
 
 type Database struct {
-	buckets map[string]Bucket
+	createdAt   time.Time
+	collections hashmap.Map
 }
 
-type Bucket struct {
+type Collection struct {
 	name    string
-	data    map[string]Data
+	data    hashmap.Map
 	expire  uint16
 }
 
@@ -19,36 +24,53 @@ type Data struct {
 }
 
 
-var database Database
-
-
-func New() {
-	database := new(Database)
-	fmt.Println("database", database)
-	fmt.Println("&database", &database)
-	fmt.Println("*database", *database)
+func New() (db *Database) {
+	db = &Database{createdAt: time.Now(), collections: *hashmap.New()}
+	log.Println("Database initialized")
+	return
 }
 
 
-func Put(bucket, key, value string) {
-	Bucket, exists := database.buckets[bucket]
+func (db *Database) Put(nameOfCollection, key, value string) {
+	// TODO: need raise error when nameOfCollection or key is nil
 	
-	// Create new bucket when not exists
-	if !exists {
-		Bucket = createBucket(bucket, 0)
+	data := Data{key:key, value:value, expire:0}
+	collection, _ := db.GetCollection(nameOfCollection, true)
+	collection.data.Put(key, data)
+}
+
+
+func (db *Database) GetCollection(nameOfCollection string, createIfNotExists bool) (*Collection, bool) {
+	// TODO: need raise error when nameOfCollection is nil
+	
+	var collection interface{}
+	var exists bool
+	
+	// If collection is not exists, create new one with specified name
+	if collection, exists = db.collections.Get(nameOfCollection);
+			!exists && createIfNotExists {
+		collection = createCollection(nameOfCollection, 0)
+		db.collections.Put(nameOfCollection, collection)
+		log.Println(
+			"New collection added [", nameOfCollection,
+			"] Total number of collections =", db.collections.Size())
 	}
 	
-	Bucket.data[key] = Data{key:key, value:value}
-	
-	fmt.Println("Database", database)
+	if collection != nil {
+		return collection.(*Collection), true
+	} else {
+		return nil, false
+	}
 }
 
 
-func createBucket(name string, expire uint16) Bucket {
-	bucket := Bucket{name:name, expire:expire}
-	//bucket.data["nono"] = Data{}
-	fmt.Println("New Bucket", bucket)
-	
-	database.buckets[name] = bucket
-	return bucket
+func (db *Database) SizeOfCollection(collection *Collection) int {
+	return collection.data.Size()
+}
+
+
+/* Private - create collection with given name and expiration time */
+func createCollection(name string, expire uint16) *Collection {
+	collection := Collection{name:name, data:*hashmap.New(), expire:expire}
+	return &collection
 }

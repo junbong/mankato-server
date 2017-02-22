@@ -26,16 +26,24 @@ func main() {
 	log.Printf("Running with... %s:%d\n", *host, *port)
 	
 	// Initialize database
-	db.New()
-	//db.Put("bong", "foo", "bar")
-	//db.Put("bong", "foo1", "bar1")
-	//db.Put("newday", "has", "come")
+	database := db.New()
+	log.Println("New database", database)
+	log.Println("New database", *database)
+	
+	// TODO: Tests
+	//database.Put("test", "foo", "bar")
+	//database.Put("test", "foo1", "bar1")
+	//database.Put("newday", "has", "come")
+	//collection, _ := database.GetCollection("test", false)
+	//nilCollection, _ := database.GetCollection("not_exists", false)
+	//log.Println("GetCollection", "test", collection)
+	//log.Println("GetCollection", "not_exists", nilCollection)
 	
 	// Start router & server
-	watchSysSigs(shutdownGraceful)
+	//watchSysSigs(shutdownGraceful)
 	
 	// Watch system signal
-	BeginRoute(*host, *port)
+	BeginRoutes(database, *host, *port)
 }
 
 
