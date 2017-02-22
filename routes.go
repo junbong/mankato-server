@@ -4,7 +4,6 @@ import (
 	"log"
 	"net/http"
 	"fmt"
-	"reflect"
 	"github.com/Junbong/mankato-server/db"
 	"github.com/julienschmidt/httprouter"
 )
@@ -59,7 +58,6 @@ func CreateCollection(
 	var collection *db.Collection
 	
 	collection, _ = database.GetCollection(nameOfCollection, true)
-	log.Println("TypeOf", reflect.TypeOf(collection))
 	
 	// TODO: make collection interface
 	// TODO: make result to JSON with lib

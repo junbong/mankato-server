@@ -27,8 +27,6 @@ func main() {
 	
 	// Initialize database
 	database := db.New()
-	log.Println("New database", database)
-	log.Println("New database", *database)
 	
 	// TODO: Tests
 	//database.Put("test", "foo", "bar")

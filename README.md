@@ -6,7 +6,38 @@ Makato is key-value type in-memory database project.
 It`s under development.
 
 
+## Build and run
+First, checkout project to your local.
+```sh
+cd ~/workspace
+mkdir -p mankato/src/github.com/Junbong
+cd mankato/src/github.com/Junbong
+git clone git@github.com:Junbong/mankato-server.git
+```
+
+Set your `$GOPATH` to checked out directory,
+```sh
+export GOPATH=~/workspace/mankato
+```
+
+Build sources. Before build, you need to get dependencies below.
+```sh
+cd $GOPATH/src/github.com/Junbong
+go build
+```
+
+An executable file may created; `mankato-server` and just run this:
+```sh
+./mankato-server
+```
+
+
 ## Dependencies
+Before get dependencies, change directory to:
+```sh
+cd $GOPATH
+```
+
 ### httprouter
 Use HTTP router.
 
