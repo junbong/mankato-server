@@ -7,7 +7,7 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
-	"github.com/Junbong/mankato-server/db"
+	"github.com/Junbong/mankato-server/db/database"
 )
 
 const (
@@ -26,22 +26,20 @@ func main() {
 	log.Printf("Running with... %s:%d\n", *host, *port)
 	
 	// Initialize database
-	database := db.New()
+	db := database.New()
 	
 	// TODO: Tests
-	//database.Put("test", "foo", "bar")
-	//database.Put("test", "foo1", "bar1")
-	//database.Put("newday", "has", "come")
-	//collection, _ := database.GetCollection("test", false)
-	//nilCollection, _ := database.GetCollection("not_exists", false)
-	//log.Println("GetCollection", "test", collection)
-	//log.Println("GetCollection", "not_exists", nilCollection)
+	//var col collection.Collection
+	//foo := db.GetOrCreateCollection("foo", true);
+	//log.Println("col_foo", foo)
+	//bar := db.GetOrCreateCollection("bar", true);
+	//log.Println("col_bar", bar)
 	
 	// Start router & server
 	//watchSysSigs(shutdownGraceful)
 	
 	// Watch system signal
-	BeginRoutes(database, *host, *port)
+	BeginRoutes(db, *host, *port)
 }
 
 

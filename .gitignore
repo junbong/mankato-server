@@ -35,4 +35,8 @@ vendor/
 /.idea
 *.iml
 
+# exclude temp file
+*.go_
+
+# exclude executables
 /mankato-server

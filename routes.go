@@ -4,16 +4,18 @@ import (
 	"log"
 	"net/http"
 	"fmt"
-	"github.com/Junbong/mankato-server/db"
+	"github.com/Junbong/mankato-server/db/database"
 	"github.com/julienschmidt/httprouter"
+	"github.com/Junbong/mankato-server/db/collection"
+	"github.com/Junbong/mankato-server/db/data"
 )
 
 
-var database db.Database
+var db *database.Database
 
-func BeginRoutes(lDatabase *db.Database, host string, port int) {
+func BeginRoutes(lDb *database.Database, host string, port int) {
 	// TODO: naive reference
-	database = *lDatabase
+	db = lDb
 	
 	// Primary routing points started from here
 	router := httprouter.New()
@@ -21,20 +23,29 @@ func BeginRoutes(lDatabase *db.Database, host string, port int) {
 	// Basic index
 	router.GET("/", Index)
 	
-	// Bucket
-	//router.GET("/:collection/_INFO", NotSupported)    // Get information of specified collection
-	router.GET("/:collection", GetCollection)           // Get all key & values in specified collection
-	router.POST("/:collection", CreateCollection)       // Create new collection with specified name
-	router.DELETE("/:collection", NotSupported)         // Delete collection, all keys & values in specified collection
+	// Server
+	router.GET("/info", GetServer)      // Get overall server information
 	
-	// Key
-	router.GET("/:collection/:key", NotSupported)
-	router.POST("/:collection/:key", NotSupported)
-	router.POST("/:collection/:key/:value", NotSupported)
-	router.DELETE("/:collection/:key", NotSupported)
+	// Collections
+	router.GET("/collections/:collection", GetCollection)           // Get collection with specified name
+	router.POST("/collections/:collection", CreateCollection)       // Create new collection with specified name
+	router.DELETE("/collections/:collection", DeleteCollection)     // Delete collection, all keys & values in specified collection
+	
+	// Data
+	router.GET("/collections/:collection/:key", GetData)                // Get key-value data with specified key
+	router.POST("/collections/:collection/:key", CreateData)            // Create new key-value data
+	router.POST("/collections/:collection/:key/:value", NotSupported)
+	router.DELETE("/collections/:collection/:key", NotSupported)
 	
 	// Listen requests
 	log.Fatal(http.ListenAndServe(fmt.Sprintf("%s:%d", host, port), router))
+}
+
+
+func onPreRequest(
+		r *http.Request,
+		params httprouter.Params) {
+	log.Printf("[%s] %s from %s", r.Method, r.RequestURI, r.RemoteAddr)
 }
 
 
@@ -43,8 +54,33 @@ func Index(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 }
 
 
-func GetCollection(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
-	fmt.Fprintf(w, "hello, %s!\n", params.ByName("collection"))
+func GetServer(
+		w http.ResponseWriter,
+		r *http.Request,
+		params httprouter.Params) {
+	onPreRequest(r, params)
+	
+	// TODO: server references
+	fmt.Fprint(w, fmt.Sprintf("{ \"server\": { \"host\": \"%s\", \"port\": %d, \"collections\": [] } }", "HOST_ADDR", 7120))
+}
+
+
+func GetCollection(
+		w http.ResponseWriter,
+		r *http.Request,
+		params httprouter.Params) {
+	onPreRequest(r, params)
+	nameOfCollection := params.ByName("collection")
+	
+	col, exists := db.Get(nameOfCollection)
+	
+	// TODO: make result to JSON with lib
+	if exists {
+		colT := col.(*collection.Collection)
+		fmt.Fprint(w, fmt.Sprintf("{ \"collection\": { \"name\": \"%s\", \"size\": %d } }", colT.Name(), colT.Size()))
+	} else {
+		w.WriteHeader(404)
+	}
 }
 
 
@@ -52,16 +88,79 @@ func CreateCollection(
 		w http.ResponseWriter,
 		r *http.Request,
 		params httprouter.Params) {
+	onPreRequest(r, params)
 	nameOfCollection := params.ByName("collection")
-	log.Printf("[%s] %s", r.Method, r.URL)
 	
-	var collection *db.Collection
-	
-	collection, _ = database.GetCollection(nameOfCollection, true)
-	
-	// TODO: make collection interface
+	// TODO: retrieve query params
+
+	col := db.GetOrCreateCollection(nameOfCollection, true).(*collection.Collection)
+
 	// TODO: make result to JSON with lib
-	fmt.Fprint(w, fmt.Sprintf("{ \"collection\": { \"name\": \"%s\", \"size\": %d } }", collection, 1))
+	fmt.Fprint(w, fmt.Sprintf("{ \"collection\": { \"name\": \"%s\", \"size\": %d } }", col.Name(), col.Size()))
+}
+
+
+func DeleteCollection(
+		w http.ResponseWriter,
+		r *http.Request,
+		params httprouter.Params) {
+	onPreRequest(r, params)
+	nameOfCollection := params.ByName("collection")
+	
+	_, exists := db.Get(nameOfCollection)
+	
+	if exists {
+		db.Remove(nameOfCollection)
+		w.WriteHeader(200)
+	} else {
+		w.WriteHeader(404)
+	}
+}
+
+
+func GetData(
+		w http.ResponseWriter,
+		r *http.Request,
+		params httprouter.Params) {
+	onPreRequest(r, params)
+	nameOfCollection := params.ByName("collection")
+	keyOfData := params.ByName("key")
+	
+	col, exists := db.Get(nameOfCollection)
+	
+	// TODO: make result to JSON with lib
+	if exists {
+		colT := col.(*collection.Collection)
+		
+		d, dexists := colT.Get(keyOfData)
+		
+		if dexists {
+			dT := d.(*data.Data)
+			fmt.Fprint(w, fmt.Sprintf("{ \"data\": { \"key\": \"%s\", \"value\": \"%s\", \"expire\": %d } }", dT.Key(), dT.Value(), dT.Expire()))
+		} else {
+			w.WriteHeader(404)
+		}
+	} else {
+		w.WriteHeader(404)
+	}
+}
+
+
+func CreateData(
+		w http.ResponseWriter,
+		r *http.Request,
+		params httprouter.Params) {
+	onPreRequest(r, params)
+	nameOfCollection := params.ByName("collection")
+	keyOfData := params.ByName("key")
+	valueOfData := "parse_value_at_here"
+	expireOfData := 0
+	
+	// TODO: retrieve query params
+	
+	col := db.GetOrCreateCollection(nameOfCollection, true).(*collection.Collection)
+	col.Put(keyOfData, valueOfData, expireOfData)
+	fmt.Fprint(w, fmt.Sprintf("{ \"collection\": { \"name\": \"%s\", \"size\": %d } }", col.Name(), col.Size()))
 }
 
 
