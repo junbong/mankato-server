@@ -7,7 +7,7 @@ import (
 	"github.com/Junbong/mankato-server/db/database"
 	"github.com/julienschmidt/httprouter"
 	"github.com/Junbong/mankato-server/db/collection"
-	"github.com/Junbong/mankato-server/db/data"
+	"github.com/Junbong/mankato-server/db/documents"
 )
 
 
@@ -23,19 +23,19 @@ func BeginRoutes(lDb *database.Database, host string, port int) {
 	// Basic index
 	router.GET("/", Index)
 	
-	// Server
-	router.GET("/info", GetServer)      // Get overall server information
-	
 	// Collections
-	router.GET("/collections/:collection", GetCollection)           // Get collection with specified name
-	router.POST("/collections/:collection", CreateCollection)       // Create new collection with specified name
-	router.DELETE("/collections/:collection", DeleteCollection)     // Delete collection, all keys & values in specified collection
+	router.GET("/:collection", GetCollection)           // Get properties of collection
+	router.POST("/:collection", CreateCollection)       // Create new collection with specified name
+	router.DELETE("/:collection", DeleteCollection)     // Remove collection with specified name, either all documents in collection
 	
-	// Data
-	router.GET("/collections/:collection/:key", GetData)                // Get key-value data with specified key
-	router.POST("/collections/:collection/:key", CreateData)            // Create new key-value data
-	router.POST("/collections/:collection/:key/:value", NotSupported)
-	router.DELETE("/collections/:collection/:key", NotSupported)
+	// Document
+	router.GET("/:collection/:key", GetDocument)                // Get document with specified key
+	router.POST("/:collection/:key", CreateDocument)            // Create new document with specified key
+	router.DELETE("/:collection/:key", NotSupported)          // Remove document with specified key
+	router.PUT("/:collection/:key", NotSupported)        // Update document with specified key
+	
+	// Meta Information
+	//router.GET("/_info", GetServer)      // Get overall server information
 	
 	// Listen requests
 	log.Fatal(http.ListenAndServe(fmt.Sprintf("%s:%d", host, port), router))
@@ -77,7 +77,7 @@ func GetCollection(
 	// TODO: make result to JSON with lib
 	if exists {
 		colT := col.(*collection.Collection)
-		fmt.Fprint(w, fmt.Sprintf("{ \"collection\": { \"name\": \"%s\", \"size\": %d } }", colT.Name(), colT.Size()))
+		fmt.Fprint(w, fmt.Sprintf("{ \"collection\": { \"name\": \"%s\", \"size\": %d } }", colT.Name, colT.Size()))
 	} else {
 		w.WriteHeader(404)
 	}
@@ -96,7 +96,7 @@ func CreateCollection(
 	col := db.GetOrCreateCollection(nameOfCollection, true).(*collection.Collection)
 
 	// TODO: make result to JSON with lib
-	fmt.Fprint(w, fmt.Sprintf("{ \"collection\": { \"name\": \"%s\", \"size\": %d } }", col.Name(), col.Size()))
+	fmt.Fprint(w, fmt.Sprintf("{ \"collection\": { \"name\": \"%s\", \"size\": %d } }", col.Name, col.Size()))
 }
 
 
@@ -118,7 +118,7 @@ func DeleteCollection(
 }
 
 
-func GetData(
+func GetDocument(
 		w http.ResponseWriter,
 		r *http.Request,
 		params httprouter.Params) {
@@ -135,8 +135,8 @@ func GetData(
 		d, dexists := colT.Get(keyOfData)
 		
 		if dexists {
-			dT := d.(*data.Data)
-			fmt.Fprint(w, fmt.Sprintf("{ \"data\": { \"key\": \"%s\", \"value\": \"%s\", \"expire\": %d } }", dT.Key(), dT.Value(), dT.Expire()))
+			dT := d.(*data.Document)
+			fmt.Fprint(w, fmt.Sprintf("{ \"data\": { \"key\": \"%s\", \"value\": \"%s\", \"expire\": %d } }", dT.Key, dT.Value, dT.ExpiresAt))
 		} else {
 			w.WriteHeader(404)
 		}
@@ -146,7 +146,7 @@ func GetData(
 }
 
 
-func CreateData(
+func CreateDocument(
 		w http.ResponseWriter,
 		r *http.Request,
 		params httprouter.Params) {
@@ -160,7 +160,7 @@ func CreateData(
 	
 	col := db.GetOrCreateCollection(nameOfCollection, true).(*collection.Collection)
 	col.Put(keyOfData, valueOfData, expireOfData)
-	fmt.Fprint(w, fmt.Sprintf("{ \"collection\": { \"name\": \"%s\", \"size\": %d } }", col.Name(), col.Size()))
+	fmt.Fprint(w, fmt.Sprintf("{ \"collection\": { \"name\": \"%s\", \"size\": %d } }", col.Name, col.Size()))
 }
 
 

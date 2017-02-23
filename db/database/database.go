@@ -51,7 +51,7 @@ func (d Database) GetOrCreateCollection(nameOfCollection string, createIfNotExis
 	col, exists = d.collections.Get(nameOfCollection)
 	
 	if !exists && createIfNotExists {
-		col = collection.New(nameOfCollection, 0)
+		col = collection.New(nameOfCollection)
 		d.Put(nameOfCollection, col)
 		log.Println(
 			"New collection added [", nameOfCollection,

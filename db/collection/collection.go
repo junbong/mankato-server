@@ -3,77 +3,65 @@ package collection
 import (
 	"fmt"
 	"github.com/emirpasic/gods/maps/hashmap"
-	"github.com/Junbong/mankato-server/db/data"
+	"github.com/Junbong/mankato-server/db/documents"
 )
 
 type Collection struct {
-	name    string
-	data    hashmap.Map
-	expire  uint16
+	Name      string
+	Documents hashmap.Map
 }
 
 
-func New(name string, expire uint16) (*Collection) {
-	return &Collection{name:name, data:*hashmap.New(), expire:expire}
+func New(name string) (*Collection) {
+	return &Collection{Name:name, Documents:*hashmap.New()}
 }
 
 
 func (c Collection) String() string {
-	return fmt.Sprintf("Collection{ name:%s, size:%d, expire:%d }", c.Name(), c.data.Size(), c.Expire())
-}
-
-
-func (c Collection) Name() string {
-	return c.name
-}
-
-
-func (c Collection) Expire() uint16 {
-	return c.expire
+	return fmt.Sprintf("Collection{ name:%s, size:%d }", c.Name, c.Documents.Size())
 }
 
 
 func (c Collection) Put(key string, value string, expire uint16) {
 	// TODO: make this function thread-safe
 
-	//c.data.Put(key, value)
 	d := data.New(key, value, expire)
-	c.data.Put(key, d)
+	c.Documents.Put(key, d)
 }
 
 
 func (c Collection) Get(key string) (interface{}, bool) {
 	// TODO: make this function thread-safe
 	
-	return c.data.Get(key)
+	return c.Documents.Get(key)
 }
 
 
 func (c Collection) Remove(key string) bool {
 	// TODO: make this function thread-safe
 	
-	before := c.data.Size()
-	c.data.Remove(key)
-	after := c.data.Size()
+	before := c.Documents.Size()
+	c.Documents.Remove(key)
+	after := c.Documents.Size()
 	return before != after
 }
 
 
 func (c Collection) Size() int {
-	return c.data.Size()
+	return c.Documents.Size()
 }
 
 
 func (c Collection) Clear() {
 	// TODO: make this function thread-safe
 	
-	c.data.Clear()
+	c.Documents.Clear()
 }
 
 
 func (c Collection) ContainsKey(key string) (contains bool) {
 	// TODO: make this function thread-safe
 	
-	_, contains = c.data.Get(key)
+	_, contains = c.Documents.Get(key)
 	return
 }
