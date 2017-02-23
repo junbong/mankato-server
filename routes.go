@@ -1,21 +1,22 @@
 package main
 
 import (
+	"github.com/Junbong/mankato-server/db/collections"
+	"github.com/Junbong/mankato-server/db/documents"
+	"github.com/julienschmidt/httprouter"
 	"log"
 	"net/http"
 	"fmt"
-	"github.com/Junbong/mankato-server/db/database"
-	"github.com/julienschmidt/httprouter"
-	"github.com/Junbong/mankato-server/db/collection"
-	"github.com/Junbong/mankato-server/db/documents"
+	"encoding/json"
+	"io/ioutil"
 )
 
 
-var db *database.Database
+var Collection *collection.Collection
 
-func BeginRoutes(lDb *database.Database, host string, port int) {
+func BeginRoutes(col *collection.Collection, host string, port int) {
 	// TODO: naive reference
-	db = lDb
+	Collection = col
 	
 	// Primary routing points started from here
 	router := httprouter.New()
@@ -23,16 +24,10 @@ func BeginRoutes(lDb *database.Database, host string, port int) {
 	// Basic index
 	router.GET("/", Index)
 	
-	// Collections
-	router.GET("/:collection", GetCollection)           // Get properties of collection
-	router.POST("/:collection", CreateCollection)       // Create new collection with specified name
-	router.DELETE("/:collection", DeleteCollection)     // Remove collection with specified name, either all documents in collection
-	
 	// Document
-	router.GET("/:collection/:key", GetDocument)                // Get document with specified key
-	router.POST("/:collection/:key", CreateDocument)            // Create new document with specified key
-	router.DELETE("/:collection/:key", NotSupported)          // Remove document with specified key
-	router.PUT("/:collection/:key", NotSupported)        // Update document with specified key
+	router.GET("/:key", GetDocument)                // Get document with specified key
+	router.POST("/:key", CreateDocument)            // Create new document with specified key
+	router.DELETE("/:key", DeleteDocument)          // Remove document with specified key
 	
 	// Meta Information
 	//router.GET("/_info", GetServer)      // Get overall server information
@@ -46,6 +41,20 @@ func onPreRequest(
 		r *http.Request,
 		params httprouter.Params) {
 	log.Printf("[%s] %s from %s", r.Method, r.RequestURI, r.RemoteAddr)
+}
+
+
+func onResultJson(
+		w http.ResponseWriter,
+		obj interface{}) {
+	// TODO: memoize result of marshaling
+	if b, err := json.Marshal(obj); err == nil {
+		w.Header().Add("Content-Type", "application/json; charset=utf-8")
+		fmt.Fprint(w, string(b[:]))
+	} else {
+		log.Fatal(err)
+		w.WriteHeader(500)
+	}
 }
 
 
@@ -65,81 +74,19 @@ func GetServer(
 }
 
 
-func GetCollection(
-		w http.ResponseWriter,
-		r *http.Request,
-		params httprouter.Params) {
-	onPreRequest(r, params)
-	nameOfCollection := params.ByName("collection")
-	
-	col, exists := db.Get(nameOfCollection)
-	
-	// TODO: make result to JSON with lib
-	if exists {
-		colT := col.(*collection.Collection)
-		fmt.Fprint(w, fmt.Sprintf("{ \"collection\": { \"name\": \"%s\", \"size\": %d } }", colT.Name, colT.Size()))
-	} else {
-		w.WriteHeader(404)
-	}
-}
-
-
-func CreateCollection(
-		w http.ResponseWriter,
-		r *http.Request,
-		params httprouter.Params) {
-	onPreRequest(r, params)
-	nameOfCollection := params.ByName("collection")
-	
-	// TODO: retrieve query params
-
-	col := db.GetOrCreateCollection(nameOfCollection, true).(*collection.Collection)
-
-	// TODO: make result to JSON with lib
-	fmt.Fprint(w, fmt.Sprintf("{ \"collection\": { \"name\": \"%s\", \"size\": %d } }", col.Name, col.Size()))
-}
-
-
-func DeleteCollection(
-		w http.ResponseWriter,
-		r *http.Request,
-		params httprouter.Params) {
-	onPreRequest(r, params)
-	nameOfCollection := params.ByName("collection")
-	
-	_, exists := db.Get(nameOfCollection)
-	
-	if exists {
-		db.Remove(nameOfCollection)
-		w.WriteHeader(200)
-	} else {
-		w.WriteHeader(404)
-	}
-}
-
-
 func GetDocument(
 		w http.ResponseWriter,
 		r *http.Request,
 		params httprouter.Params) {
 	onPreRequest(r, params)
-	nameOfCollection := params.ByName("collection")
 	keyOfData := params.ByName("key")
 	
-	col, exists := db.Get(nameOfCollection)
+	doc, exists := Collection.Get(keyOfData)
 	
 	// TODO: make result to JSON with lib
 	if exists {
-		colT := col.(*collection.Collection)
-		
-		d, dexists := colT.Get(keyOfData)
-		
-		if dexists {
-			dT := d.(*data.Document)
-			fmt.Fprint(w, fmt.Sprintf("{ \"data\": { \"key\": \"%s\", \"value\": \"%s\", \"expire\": %d } }", dT.Key, dT.Value, dT.ExpiresAt))
-		} else {
-			w.WriteHeader(404)
-		}
+		docT := doc.(*document.Document)
+		onResultJson(w, docT)
 	} else {
 		w.WriteHeader(404)
 	}
@@ -151,16 +98,41 @@ func CreateDocument(
 		r *http.Request,
 		params httprouter.Params) {
 	onPreRequest(r, params)
-	nameOfCollection := params.ByName("collection")
 	keyOfData := params.ByName("key")
-	valueOfData := "parse_value_at_here"
-	var expireOfData uint16 = 0
 	
-	// TODO: retrieve query params
+	if b, err := ioutil.ReadAll(r.Body); err == nil {
+		var valueOfData string
+		
+		if len(b) > 0 {
+			valueOfData = string(b)
+		} else {
+			valueOfData = ""
+		}
+		
+		// TODO: retrieve query params
+		var expireOfData uint = 0
+		
+		Collection.Put(keyOfData, valueOfData, expireOfData)
+		w.WriteHeader(200)
+	} else {
+		log.Fatal(err)
+		w.WriteHeader(500)
+	}
+}
+
+
+func DeleteDocument(
+		w http.ResponseWriter,
+		r *http.Request,
+		params httprouter.Params) {
+	onPreRequest(r, params)
+	keyOfData := params.ByName("key")
 	
-	col := db.GetOrCreateCollection(nameOfCollection, true).(*collection.Collection)
-	col.Put(keyOfData, valueOfData, expireOfData)
-	fmt.Fprint(w, fmt.Sprintf("{ \"collection\": { \"name\": \"%s\", \"size\": %d } }", col.Name, col.Size()))
+	if Collection.Remove(keyOfData) {
+		w.WriteHeader(200)
+	} else {
+		w.WriteHeader(404)
+	}
 }
 
 

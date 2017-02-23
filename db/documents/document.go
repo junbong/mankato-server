@@ -1,18 +1,22 @@
-package data
+package document
 
-import "fmt"
+import (
+	"fmt"
+	"time"
+)
 
 type Document struct {
-	Key       string
-	Value     string
-	CreatedAt uint16
-	ExpiresAt uint16
+	Key       string    `json:"key"`
+	Value     string    `json:"value"`
+	CreatedAt int64     `json:"_created_at"`
+	ExpiresAt int64     `json:"_expires_at"`
 }
 
 
-func New(key string, value string, expire uint16) (*Document) {
-	// TODO: 'expire' need to be changed to 'ttl'
-	return &Document{Key:key, Value:value, ExpiresAt:expire}
+func New(key string, value string, expAfterSec uint) (*Document) {
+	now := time.Now()
+	exp := now.Add(time.Second * time.Duration(expAfterSec))
+	return &Document{Key:key, Value:value, CreatedAt:now.Unix(), ExpiresAt:exp.Unix()}
 }
 
 

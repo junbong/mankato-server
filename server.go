@@ -1,13 +1,13 @@
 package main
 
 import (
+	"github.com/Junbong/mankato-server/db/collections"
 	"flag"
 	"log"
 	"fmt"
 	"os"
 	"os/signal"
 	"syscall"
-	"github.com/Junbong/mankato-server/db/database"
 )
 
 const (
@@ -26,20 +26,13 @@ func main() {
 	log.Printf("Running with... %s:%d\n", *host, *port)
 	
 	// Initialize database
-	db := database.New()
-	
-	// TODO: Tests
-	//var col collection.Collection
-	//foo := db.GetOrCreateCollection("foo", true);
-	//log.Println("col_foo", foo)
-	//bar := db.GetOrCreateCollection("bar", true);
-	//log.Println("col_bar", bar)
-	
-	// Start router & server
-	//watchSysSigs(shutdownGraceful)
+	col := collection.New("default")
 	
 	// Watch system signal
-	BeginRoutes(db, *host, *port)
+	//watchSysSigs(shutdownGraceful)
+	
+	// Start router & server
+	BeginRoutes(col, *host, *port)
 }
 
 

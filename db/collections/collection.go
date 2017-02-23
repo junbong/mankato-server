@@ -1,19 +1,21 @@
 package collection
 
 import (
-	"fmt"
-	"github.com/emirpasic/gods/maps/hashmap"
 	"github.com/Junbong/mankato-server/db/documents"
+	"github.com/emirpasic/gods/maps/hashmap"
+	"fmt"
+	"time"
 )
 
 type Collection struct {
 	Name      string
 	Documents hashmap.Map
+	CreatedAt int64
 }
 
 
 func New(name string) (*Collection) {
-	return &Collection{Name:name, Documents:*hashmap.New()}
+	return &Collection{Name:name, Documents:*hashmap.New(), CreatedAt:time.Now().Unix()}
 }
 
 
@@ -22,10 +24,10 @@ func (c Collection) String() string {
 }
 
 
-func (c Collection) Put(key string, value string, expire uint16) {
+func (c Collection) Put(key string, value string, expire uint) {
 	// TODO: make this function thread-safe
 
-	d := data.New(key, value, expire)
+	d := document.New(key, value, expire)
 	c.Documents.Put(key, d)
 }
 
