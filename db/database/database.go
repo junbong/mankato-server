@@ -4,7 +4,7 @@ import (
 	"time"
 	"github.com/emirpasic/gods/maps/hashmap"
 	"fmt"
-	"github.com/Junbong/mankato-server/db/collection"
+	"github.com/Junbong/mankato-server/db/collections"
 	"log"
 )
 
