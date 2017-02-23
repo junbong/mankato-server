@@ -19,12 +19,17 @@ func New(name string, expire uint16) (*Collection) {
 
 
 func (c Collection) String() string {
-	return fmt.Sprintf("Collection{ name:%s, size:%d, expire:%d }", c.name, c.data.Size(), c.expire)
+	return fmt.Sprintf("Collection{ name:%s, size:%d, expire:%d }", c.Name(), c.data.Size(), c.Expire())
 }
 
 
 func (c Collection) Name() string {
 	return c.name
+}
+
+
+func (c Collection) Expire() uint16 {
+	return c.expire
 }
 
 

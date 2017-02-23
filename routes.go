@@ -154,7 +154,7 @@ func CreateData(
 	nameOfCollection := params.ByName("collection")
 	keyOfData := params.ByName("key")
 	valueOfData := "parse_value_at_here"
-	expireOfData := 0
+	var expireOfData uint16 = 0
 	
 	// TODO: retrieve query params
 	
