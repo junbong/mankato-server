@@ -53,7 +53,7 @@ func onResultJson(
 		fmt.Fprint(w, string(b[:]))
 	} else {
 		log.Fatal(err)
-		w.WriteHeader(500)
+		w.WriteHeader(http.StatusInternalServerError)
 	}
 }
 
@@ -88,7 +88,7 @@ func GetDocument(
 		docT := doc.(*document.Document)
 		onResultJson(w, docT)
 	} else {
-		w.WriteHeader(404)
+		w.WriteHeader(http.StatusNotFound)
 	}
 }
 
@@ -113,10 +113,10 @@ func CreateDocument(
 		var expireOfData uint = 0
 		
 		Collection.Put(keyOfData, valueOfData, expireOfData)
-		w.WriteHeader(200)
+		w.WriteHeader(http.StatusOK)
 	} else {
 		log.Fatal(err)
-		w.WriteHeader(500)
+		w.WriteHeader(http.StatusInternalServerError)
 	}
 }
 
@@ -129,14 +129,14 @@ func DeleteDocument(
 	keyOfData := params.ByName("key")
 	
 	if Collection.Remove(keyOfData) {
-		w.WriteHeader(200)
+		w.WriteHeader(http.StatusOK)
 	} else {
-		w.WriteHeader(404)
+		w.WriteHeader(http.StatusNotFound)
 	}
 }
 
 
 func NotSupported(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
-	w.WriteHeader(404)
+	w.WriteHeader(http.StatusNotFound)
 	fmt.Fprint(w, "This operation does not supported!\n")
 }
