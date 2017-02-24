@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/Junbong/mankato-server/servers"
 	"github.com/Junbong/mankato-server/db/collections"
 	"flag"
 	"log"
@@ -23,7 +24,9 @@ func main() {
 	// Parse program flags and read configurations
 	flag.Parse()
 	log.Println("Project Mankato", version)
-	log.Printf("Running with... %s:%d\n", *host, *port)
+	
+	// Initialize configs
+	con := &server.Config{Host:*host, Port:*port}
 	
 	// Initialize database
 	col := collection.New("default")
@@ -32,7 +35,8 @@ func main() {
 	//watchSysSigs(shutdownGraceful)
 	
 	// Start router & server
-	BeginRoutes(col, *host, *port)
+	svr := server.New(con, col)
+	svr.BeginRoutes()
 }
 
 

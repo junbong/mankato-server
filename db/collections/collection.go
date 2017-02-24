@@ -19,27 +19,40 @@ func New(name string) (*Collection) {
 }
 
 
-func (c Collection) String() string {
+func (c *Collection) String() string {
 	return fmt.Sprintf("Collection{ name:%s, size:%d }", c.Name, c.Documents.Size())
 }
 
 
-func (c Collection) Put(key string, value string, expire uint) {
+func (c *Collection) Put(key string, value string, expAfterSec int) {
 	// TODO: make this function thread-safe
 
-	d := document.New(key, value, expire)
+	d := document.New(key, value, expAfterSec)
 	c.Documents.Put(key, d)
 }
 
 
-func (c Collection) Get(key string) (interface{}, bool) {
+func (c *Collection) PutOrUpdate(key string, value string, expAfterSec int) {
+	// TODO: make this function thread-safe
+	
+	// Already has key, update it
+	if doc, exists := c.Get(key); exists {
+		docT := doc.(*document.Document)
+		docT.Update(value, expAfterSec)
+	} else {
+		c.Put(key, value, expAfterSec)
+	}
+}
+
+
+func (c *Collection) Get(key string) (interface{}, bool) {
 	// TODO: make this function thread-safe
 	
 	return c.Documents.Get(key)
 }
 
 
-func (c Collection) Remove(key string) bool {
+func (c *Collection) Remove(key string) bool {
 	// TODO: make this function thread-safe
 	
 	before := c.Documents.Size()
@@ -49,19 +62,19 @@ func (c Collection) Remove(key string) bool {
 }
 
 
-func (c Collection) Size() int {
+func (c *Collection) Size() int {
 	return c.Documents.Size()
 }
 
 
-func (c Collection) Clear() {
+func (c *Collection) Clear() {
 	// TODO: make this function thread-safe
 	
 	c.Documents.Clear()
 }
 
 
-func (c Collection) ContainsKey(key string) (contains bool) {
+func (c *Collection) ContainsKey(key string) (contains bool) {
 	// TODO: make this function thread-safe
 	
 	_, contains = c.Documents.Get(key)

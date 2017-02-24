@@ -1,15 +1,21 @@
 package utils
 
 
-func IsNotNilOrEmpty(str string) bool {
-	if str != nil && len(str) > 0 {
-		return true
+func IsNotNilOrEmpty(obj interface{}) bool {
+	if obj != nil {
+		switch obj.(type) {
+		case string:
+			return obj != ""
+		
+		default:
+			return true
+		}
 	}
 	
 	return false
 }
 
 
-func IsNilOrEmpty(str string) bool {
-	return !IsNotNilOrEmpty(str)
+func IsNilOrEmpty(obj interface{}) bool {
+	return !IsNotNilOrEmpty(obj)
 }
