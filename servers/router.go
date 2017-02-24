@@ -72,7 +72,7 @@ func onResultJson(
 		fmt.Fprint(w, string(b[:]))
 	} else {
 		log.Fatal(err)
-		w.WriteHeader(500)
+		w.WriteHeader(http.StatusInternalServerError)
 	}
 }
 
@@ -106,7 +106,7 @@ func (sr *ServerRouter) GetDocument(
 		docT := doc.(*document.Document)
 		onResultJson(w, docT)
 	} else {
-		w.WriteHeader(404)
+		w.WriteHeader(http.StatusNotFound)
 	}
 }
 
@@ -142,7 +142,7 @@ func (sr *ServerRouter) CreateOrUpdateDocument(
 		
 	} else {
 		log.Fatal(err)
-		w.WriteHeader(500)
+		w.WriteHeader(http.StatusInternalServerError)
 	}
 }
 
@@ -155,9 +155,9 @@ func (sr *ServerRouter) DeleteDocument(
 	keyOfData := vars["key"]
 	
 	if sr.Database.Remove(keyOfData) {
-		w.WriteHeader(200)
+		w.WriteHeader(http.StatusOK)
 	} else {
-		w.WriteHeader(404)
+		w.WriteHeader(http.StatusNotFound)
 	}
 }
 
@@ -165,6 +165,6 @@ func (sr *ServerRouter) DeleteDocument(
 func (sr *ServerRouter) NotSupported(
 		w http.ResponseWriter,
 		r *http.Request) {
-	w.WriteHeader(404)
+	w.WriteHeader(http.StatusNotFound)
 	fmt.Fprint(w, "This operation does not supported")
 }

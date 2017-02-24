@@ -50,12 +50,12 @@ Before get dependencies, change directory to:
 cd $GOPATH
 ```
 
-### httprouter
-Use HTTP router.
+### mux
+Use MUX HTTP router.
 
-https://github.com/julienschmidt/httprouter
+https://github.com/gorilla/mux
 ```sh
-go get github.com/julienschmidt/httprouter
+$ go get github.com/gorilla/mux
 ```
 
 ### gods
