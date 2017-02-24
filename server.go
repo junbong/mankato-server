@@ -30,6 +30,7 @@ func main() {
 	
 	// Initialize database
 	col := collection.New("default")
+	col.Open()
 	
 	// Watch system signal
 	//watchSysSigs(shutdownGraceful)
@@ -37,6 +38,8 @@ func main() {
 	// Start router & server
 	svr := server.New(con, col)
 	svr.BeginRoutes()
+	
+	defer col.Close()
 }
 
 
@@ -58,10 +61,11 @@ func watchSysSigs(termination func()) {
 }
 
 
-func shutdownGraceful() {
+func shutdownGraceful(col *collection.Collection) {
 	log.Println("Shutdown graceful...")
 	
 	// Shutdown
+	col.Close()
 	
 	log.Println("Bye :]")
 }

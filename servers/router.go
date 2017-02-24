@@ -56,9 +56,6 @@ func (r *ServerRouter) BeginRoutes() {
 
 
 func onPreRequest(r *http.Request) {
-	vars := mux.Vars(r)
-	log.Println(vars)
-	
 	log.Printf("[%s] %s from %s", r.Method, r.RequestURI, r.RemoteAddr)
 }
 
@@ -86,6 +83,8 @@ func (sr *ServerRouter) GetServer(
 		w http.ResponseWriter,
 		r *http.Request) {
 	onPreRequest(r)
+	
+	log.Println(sr.Database.String())
 	
 	serverinf.Keys = sr.Database.Size()
 	onResultJson(w, serverinf)
@@ -137,8 +136,8 @@ func (sr *ServerRouter) CreateOrUpdateDocument(
 			}
 		}
 		
-		sr.Database.PutOrUpdate(keyOfData, valueOfData, expAfterSec)
-		sr.GetDocument(w, r)
+		doc := sr.Database.PutOrUpdate(keyOfData, valueOfData, expAfterSec)
+		onResultJson(w, doc)
 		
 	} else {
 		log.Fatal(err)

@@ -9,6 +9,7 @@ import (
 type Document struct {
 	Key       string        `json:"key"`
 	Value     string        `json:"value"`
+	Expired   bool          `json:"_expired"`
 	CreatedAt interface{}   `json:"_created_at"`
 	ExpiresAt interface{}   `json:"_expires_at"`
 }
@@ -62,6 +63,15 @@ func (d *Document) updateValueAndExpires(
 	} else {
 		d.ExpiresAt = nil
 	}
+	
+	return d
+}
+
+
+func (d *Document) Expire() (*Document) {
+	d.Expired = true
+	
+	fmt.Printf("Document Expired: %s \n", d.String())
 	
 	return d
 }
