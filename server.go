@@ -2,13 +2,16 @@ package main
 
 import (
 	"github.com/Junbong/mankato-server/servers"
+	"github.com/Junbong/mankato-server/configs"
 	"github.com/Junbong/mankato-server/db/collections"
+	"gopkg.in/yaml.v2"
 	"flag"
 	"log"
 	"fmt"
 	"os"
 	"os/signal"
 	"syscall"
+	"io/ioutil"
 )
 
 const (
@@ -16,27 +19,52 @@ const (
 )
 
 
-var host = flag.String("h", "localhost", "Set host address of server")
-var port = flag.Int("p", 7120, "Set port number of server")
+var (
+	ophost = flag.String("h", "localhost", "Set host address of server")
+	opport = flag.Int("p", 7120, "Set port number of server")
+	opconf = flag.String("conf", "./conf/default.yml", "Configuration path")
+	config  *configs.Config
+)
+
+
+func init() {
+	log.Println("Project Mankato", version)
+	
+	// Parse program flags and read configurations
+	flag.Parse()
+	
+	// Load configuration
+	if dat, err := ioutil.ReadFile(*opconf); err == nil {
+		config = &configs.Config{}
+		if err := yaml.Unmarshal([]byte(dat), config); err == nil {
+			// Use host command option first
+			if config.Server.Host != *ophost {
+				config.Server.Host = *ophost
+			}
+			// Use port command option first
+			if config.Server.Port != *opport {
+				config.Server.Port = *opport
+			}
+		} else {
+			panic(err)
+		}
+	} else {
+		panic(err)
+	}
+	log.Printf("Use configuration %s", *opconf)
+}
 
 
 func main() {
-	// Parse program flags and read configurations
-	flag.Parse()
-	log.Println("Project Mankato", version)
-	
-	// Initialize configs
-	con := &server.Config{Host:*host, Port:*port}
-	
 	// Initialize database
-	col := collection.New("default")
+	col := collection.New("default", config)
 	col.Open()
 	
 	// Watch system signal
 	//watchSysSigs(shutdownGraceful)
 	
 	// Start router & server
-	svr := server.New(con, col)
+	svr := server.New(config, col)
 	svr.BeginRoutes()
 	
 	defer col.Close()

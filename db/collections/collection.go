@@ -1,6 +1,7 @@
 package collection
 
 import (
+	"github.com/Junbong/mankato-server/configs"
 	"github.com/Junbong/mankato-server/db/documents"
 	"github.com/emirpasic/gods/maps/hashmap"
 	"github.com/emirpasic/gods/trees/btree"
@@ -12,13 +13,14 @@ import (
 )
 
 type Collection struct {
-	Name      string
-	Opened    bool
-	ScanTtl   bool
-	Documents hashmap.Map
-	TtlIndex  btree.Tree
-	OpLock    sync.Mutex
-	CreatedAt int64
+	Name                string
+	Opened              bool
+	ScanTtl             bool
+	Documents           hashmap.Map
+	TtlIndex            btree.Tree
+	OpLock              sync.Mutex
+	CreatedAt           int64
+	ttlScanPeriodMillis int
 }
 
 const (
@@ -26,14 +28,23 @@ const (
 )
 
 
-func New(name string) (*Collection) {
-	return &Collection{
+func New(name string, config *configs.Config) (*Collection) {
+	c := &Collection{
 		Name:       name,
 		ScanTtl:    true,
 		Documents:  *hashmap.New(),
 		TtlIndex:   *btree.NewWith(3, utils.Int64Comparator),
 		CreatedAt:  time.Now().Unix(),
 	}
+	
+	// Configs
+	if (config.Collection.TtlScanPeriodMillis) != TTL_SCANNER_DELAY_MILLIS {
+		c.ttlScanPeriodMillis = config.Collection.TtlScanPeriodMillis
+	} else {
+		c.ttlScanPeriodMillis = TTL_SCANNER_DELAY_MILLIS
+	}
+	
+	return c
 }
 
 
@@ -52,7 +63,7 @@ func (c *Collection) Open() (*Collection) {
 	if c.ScanTtl {
 		go func(col *Collection) {
 			for col.Opened {
-				time.Sleep(time.Millisecond * time.Duration(TTL_SCANNER_DELAY_MILLIS))
+				time.Sleep(time.Millisecond * time.Duration(c.ttlScanPeriodMillis))
 				c.scanTtlsAndRemove()
 			}
 		}(c)

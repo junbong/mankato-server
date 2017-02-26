@@ -1,6 +1,7 @@
 package server
 
 import (
+	"github.com/Junbong/mankato-server/configs"
 	"github.com/Junbong/mankato-server/db/collections"
 	"github.com/Junbong/mankato-server/db/documents"
 	"github.com/Junbong/mankato-server/utils"
@@ -14,7 +15,7 @@ import (
 )
 
 type ServerRouter struct {
-	Configuration *Config
+	Configuration *configs.Config
 	Mux           *mux.Router
 	Database      *collection.Collection
 }
@@ -28,7 +29,7 @@ type ServerInfo struct {
 var serverinf *ServerInfo
 
 
-func New(config *Config, database *collection.Collection) *ServerRouter {
+func New(config *configs.Config, database *collection.Collection) *ServerRouter {
 	return &ServerRouter{Configuration:config, Mux:mux.NewRouter(), Database:database}
 }
 
@@ -48,7 +49,7 @@ func (r *ServerRouter) BeginRoutes() {
 	// Start
 	serverinf = &ServerInfo{
 		Status: "ok",
-		ServerAddr: fmt.Sprintf("%s:%d", r.Configuration.Host, r. Configuration.Port),
+		ServerAddr: fmt.Sprintf("%s:%d", r.Configuration.Server.Host, r. Configuration.Server.Port),
 	}
 	log.Printf("Running with... %s\n", serverinf.ServerAddr)
 	log.Fatal(http.ListenAndServe(serverinf.ServerAddr, r.Mux))
