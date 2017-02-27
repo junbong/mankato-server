@@ -1,7 +1,7 @@
-foo: bar
 server:
-  host: localhost
+  host: "localhost"
   port: 7120
+
 collection:
-  # TTL expiration scanning period for milliseconds
+  # TTL expiration scanning period in milliseconds
   ttl_scan_period: 1000

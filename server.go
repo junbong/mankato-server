@@ -12,6 +12,7 @@ import (
 	"os/signal"
 	"syscall"
 	"io/ioutil"
+	"sync"
 )
 
 const (
@@ -64,10 +65,30 @@ func main() {
 	//watchSysSigs(shutdownGraceful)
 	
 	// Start router & server
-	svr := server.New(config, col)
+	svr := server.NewRouter(config, col)
 	svr.BeginRoutes()
 	
-	defer col.Close()
+	//
+	sigs := make(chan os.Signal)
+	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
+	var wg sync.WaitGroup
+	wg.Add(1)
+	
+	go func() {
+		defer wg.Done()
+		svr.StartServe()
+	}()
+	
+	select {
+	case sig := <-sigs:
+		fmt.Println()
+		log.Println(sig, "signal")
+	}
+	svr.StopServe()
+	wg.Wait()
+	//
+	
+	defer shutdownGraceful(col)
 }
 
 

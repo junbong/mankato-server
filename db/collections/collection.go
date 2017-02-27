@@ -87,7 +87,7 @@ func (c *Collection) checkOpened() {
 
 func (c *Collection) scanTtlsAndRemove() {
 	// TODO:#
-	log.Println("Scan TTL")
+	//log.Println("Scan TTL")
 	
 	now := time.Now().Unix()
 	
@@ -266,6 +266,14 @@ func (c *Collection) Close() (*Collection) {
 	c.OpLock.Lock()
 	
 	// Stop all threads
+	var wg sync.WaitGroup
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		time.Sleep(time.Second * 2)
+	}()
+	wg.Wait()
+	//
 	
 	c.Opened = false
 	defer c.OpLock.Unlock()
