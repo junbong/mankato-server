@@ -1,0 +1,15 @@
+server:
+  host: "localhost"
+  port: 7120
+  client_max_body_size: "20M"
+
+collection:
+  default_name: "default"   # Name of default collection
+  ttl_scan_period: 1000     # TTL expiration scanning period in milliseconds
+
+expiration_handler:
+  - type: "amqp"            # Describe what type of this handler: currently supported only amqp
+    enable: true            # Enable or disable this handler
+    properties:
+      uri: amqp://zoyi:gksdn2roTlr!@service.kona.dev.zoyi.co:5672
+      queue: mytest

@@ -6,6 +6,8 @@ import (
 	"github.com/emirpasic/gods/maps/hashmap"
 	"github.com/emirpasic/gods/trees/btree"
 	"github.com/emirpasic/gods/utils"
+	"github.com/Junbong/mankato-server/exphandlers"
+	"github.com/Junbong/mankato-server/exphandlers/amqp"
 	"fmt"
 	"time"
 	"sync"
@@ -21,9 +23,11 @@ type Collection struct {
 	OpLock              sync.Mutex
 	CreatedAt           int64
 	ttlScanPeriodMillis int
+	expirationHandler   []exphandler.ExpirationHandler
 }
 
 const (
+	// It will replaced when value of configuration is not same with this value
 	TTL_SCANNER_DELAY_MILLIS = 1000
 )
 
@@ -38,10 +42,31 @@ func New(name string, config *configs.Config) (*Collection) {
 	}
 	
 	// Configs
-	if (config.Collection.TtlScanPeriodMillis) != TTL_SCANNER_DELAY_MILLIS {
+	if config.Collection.TtlScanPeriodMillis != TTL_SCANNER_DELAY_MILLIS {
 		c.ttlScanPeriodMillis = config.Collection.TtlScanPeriodMillis
 	} else {
 		c.ttlScanPeriodMillis = TTL_SCANNER_DELAY_MILLIS
+	}
+	
+	// Expiration Handlers
+	for _, hcfg := range config.ExpirationHandler {
+		if hcfg.Enable {
+			switch hcfg.Type {
+			case "amqp":
+				h := amqpexphandler.New(
+					hcfg.Properties["uri"],
+					hcfg.Properties["queue"],
+				)
+				if err := h.Open(); err == nil {
+					c.expirationHandler = append(c.expirationHandler, h)
+				} else {
+					log.Fatalln("Expiration handler is not opened ", h)
+				}
+				
+			default:
+				panic(fmt.Sprintf("Invalid handler type '%s'", hcfg.Type))
+			}
+		}
 	}
 	
 	return c
@@ -49,10 +74,6 @@ func New(name string, config *configs.Config) (*Collection) {
 
 
 func (c *Collection) String() string {
-	//TODO:#
-	fmt.Println(c.TtlIndex.String())
-	fmt.Println(c.TtlIndex.Values())
-	
 	return fmt.Sprintf(
 		"Collection{ name:%s, size:%d, open:%v, created_at:%s }",
 		c.Name, c.Documents.Size(), c.Opened, time.Unix(c.CreatedAt, 0))
@@ -86,9 +107,6 @@ func (c *Collection) checkOpened() {
 
 
 func (c *Collection) scanTtlsAndRemove() {
-	// TODO:#
-	//log.Println("Scan TTL")
-	
 	now := time.Now().Unix()
 	
 	for true {
@@ -104,6 +122,11 @@ func (c *Collection) scanTtlsAndRemove() {
 					
 					// Remove Document
 					c.Documents.Remove(docT.Key)
+					
+					// Handle expiration
+					for _, handler := range c.expirationHandler {
+						handler.HandleDocument(docT)
+					}
 				}
 			})
 			bucket.(*Bucket).Clear()
@@ -265,6 +288,14 @@ func (c *Collection) Close() (*Collection) {
 	c.checkOpened()
 	c.OpLock.Lock()
 	
+	// Update status
+	c.Opened = false
+	
+	// Close all expiration handlers
+	for _, handler := range c.expirationHandler {
+		handler.Close()
+	}
+	
 	// Stop all threads
 	var wg sync.WaitGroup
 	wg.Add(1)
@@ -275,7 +306,6 @@ func (c *Collection) Close() (*Collection) {
 	wg.Wait()
 	//
 	
-	c.Opened = false
 	defer c.OpLock.Unlock()
 	
 	log.Printf("Collection [ %s ] closed", c.Name)

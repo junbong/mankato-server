@@ -23,7 +23,7 @@ const (
 var (
 	ophost = flag.String("h", "localhost", "Set host address of server")
 	opport = flag.Int("p", 7120, "Set port number of server")
-	opconf = flag.String("conf", "./conf/default.yml", "Configuration path")
+	opconf = flag.String("conf", "./etc/configuration.yml", "Configuration path")
 	config  *configs.Config
 )
 
@@ -58,25 +58,31 @@ func init() {
 
 func main() {
 	// Initialize database
-	col := collection.New("default", config)
+	col := collection.New(config.Collection.DefaultName, config)
 	col.Open()
-	
-	// Watch system signal
-	//watchSysSigs(shutdownGraceful)
 	
 	// Start router & server
 	svr := server.NewRouter(config, col)
-	svr.BeginRoutes()
+	svr.SetupRoutes()
 	
-	//
+	// Run server and watch system signal
+	watchSysSigs(svr.StartServe, svr.StopServe)
+	
+	// Called when shutdown
+	defer shutdownGraceful(col)
+}
+
+
+func watchSysSigs(fn1, fn2 func()) {
 	sigs := make(chan os.Signal)
 	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
+	
 	var wg sync.WaitGroup
 	wg.Add(1)
 	
 	go func() {
 		defer wg.Done()
-		svr.StartServe()
+		fn1()
 	}()
 	
 	select {
@@ -84,29 +90,9 @@ func main() {
 		fmt.Println()
 		log.Println(sig, "signal")
 	}
-	svr.StopServe()
+	
+	fn2()
 	wg.Wait()
-	//
-	
-	defer shutdownGraceful(col)
-}
-
-
-func watchSysSigs(termination func()) {
-	sigs := make(chan os.Signal, 1)
-	term := make(chan bool, 1)
-	
-	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
-	
-	go func() {
-		sig := <-sigs
-		fmt.Println()
-		log.Println(sig)
-		term <-true
-	}()
-	
-	<-term
-	termination()
 }
 
 

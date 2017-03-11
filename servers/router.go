@@ -49,7 +49,7 @@ func (r *ServerRouter) String() (string) {
 }
 
 
-func (r *ServerRouter) BeginRoutes() {
+func (r *ServerRouter) SetupRoutes() {
 	// Basic index
 	r.Mux.HandleFunc("/", r.Index).Methods("GET")
 	

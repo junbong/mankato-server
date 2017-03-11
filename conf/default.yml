@@ -1,7 +1,0 @@
-server:
-  host: "localhost"
-  port: 7120
-
-collection:
-  # TTL expiration scanning period in milliseconds
-  ttl_scan_period: 1000

@@ -66,11 +66,18 @@ https://github.com/emirpasic/gods
 go get github.com/emirpasic/gods
 ```
 
-
 ### go-yaml
 Use for yaml parser for next feature.
 
 https://github.com/go-yaml/yaml
 ```sh
 go get gopkg.in/yaml.v2
+```
+
+### amqp
+Use for AMQP expiration callback.
+
+https://github.com/streadway/amqp
+```sh
+go get github.com/streadway/amqp
 ```
