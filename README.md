@@ -6,6 +6,19 @@ Makato is key-value type in-memory database project.
 It`s under development.
 
 
+## Key Features
+#### Key-Value NO-SQL Database
+Mankato is key-value type in-memory database.
+Key is character sequence, and value can be *anything* you want!
+
+#### Blazing Fast
+Mankato made by Go lang which is amazingly fast 
+and all of it`s data structures use native structures.
+
+#### TTL  / Expiration Callback
+Mankato provides expiration callback.
+
+
 ## Project structure
 ```
 mankato
