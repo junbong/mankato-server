@@ -11,5 +11,5 @@ expiration_handler:
   - type: "amqp"            # Describe what type of this handler: currently supported only amqp
     enable: true            # Enable or disable this handler
     properties:
-      uri: amqp://zoyi:gksdn2roTlr!@service.kona.dev.zoyi.co:5672
+      uri: amqp://testuser:testpass@localhost:5672
       queue: mytest
