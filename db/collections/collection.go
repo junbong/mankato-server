@@ -143,11 +143,12 @@ func (c *Collection) scanTtlsAndRemove() {
 
 func (c *Collection) Put(
 		key string,
-		value string,
+		value []byte,
+		contentType string,
 		expAfterSec int) (*document.Document) {
 	c.checkOpened()
 
-	doc := document.New(key, value, expAfterSec)
+	doc := document.New(key, value, contentType, expAfterSec)
 	
 	c.OpLock.Lock()
 	c.Documents.Put(key, doc)
@@ -162,7 +163,8 @@ func (c *Collection) Put(
 
 func (c *Collection) PutOrUpdate(
 		key string,
-		value string,
+		value []byte,
+		contentType string,
 		expAfterSec int) (*document.Document) {
 	c.checkOpened()
 	
@@ -179,7 +181,7 @@ func (c *Collection) PutOrUpdate(
 		return docT
 		
 	} else {
-		return c.Put(key, value, expAfterSec)
+		return c.Put(key, value, contentType, expAfterSec)
 	}
 }
 

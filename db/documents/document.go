@@ -4,21 +4,41 @@ import (
 	"fmt"
 	"time"
 	"github.com/Junbong/mankato-server/utils"
+	"regexp"
+	"log"
+)
+
+const (
+	DEFAULT_CONTENT_TYPE string = "text/plain"
+	CONTENT_TYPE_REGEX string   = "[A-z0-9]+\\/[A-z0-9]+"
+	NEVER_EXPIRES string        = "never"
 )
 
 type Document struct {
-	Key       string        `json:"key"`
-	Value     string        `json:"value"`
-	Expired   bool          `json:"_expired"`
-	CreatedAt interface{}   `json:"_created_at"`
-	ExpiresAt interface{}   `json:"_expires_at"`
+	Key         string          `json:"key"`
+	Value       []byte          `json:"value"`
+	ContentType string          `json:"content_type"`
+	Expired     bool            `json:"_expired"`
+	CreatedAt   interface{}     `json:"_created_at"`
+	ExpiresAt   interface{}     `json:"_expires_at"`
 }
 
 
-func New(key string, value string, expAfterSec int) (*Document) {
+func New(key string, value []byte, contentType string, expAfterSec int) (*Document) {
 	now := time.Now()
 	
-	d := Document{Key:key, CreatedAt:now.Unix()}
+	// Content type
+	match, err := regexp.MatchString(CONTENT_TYPE_REGEX, contentType)
+	if !match || err != nil {
+		log.Printf("Unresolved content type '%s' so use default content type %s",
+			contentType, DEFAULT_CONTENT_TYPE)
+		contentType = DEFAULT_CONTENT_TYPE
+	}
+	
+	// Create new document
+	d := Document{Key:key, ContentType:contentType, CreatedAt:now.Unix()}
+	
+	// Set value
 	d.updateValueAndExpires(value, expAfterSec, now)
 	
 	return &d
@@ -31,28 +51,30 @@ func (d *Document) String() string {
 	if d.ExpiresAt != nil {
 		exAt = time.Unix(d.ExpiresAt.(int64), 0).String()
 	} else {
-		exAt = "never"
+		exAt = NEVER_EXPIRES
 	}
 	
-	return fmt.Sprintf("Document{ key:%s, value:%s, created_at:%s expires_at:%s }",
-		d.Key, d.Value, time.Unix(d.CreatedAt.(int64), 0).String(), exAt)
+	return fmt.Sprintf("Document{ key: %s, value: %s, content_type: %s, created_at: %s expires_at: %s }",
+		d.Key, d.Value, d.ContentType, time.Unix(d.CreatedAt.(int64), 0).String(), exAt)
 }
 
 
-func (d *Document) Update(value string, expAfterSec int) (*Document) {
+func (d *Document) Update(value []byte, expAfterSec int) (*Document) {
 	return d.updateValueAndExpires(value, expAfterSec, time.Now())
 }
 
 
 func (d *Document) updateValueAndExpires(
-		value string,
+		value []byte,
 		expAfterSec int,
 		expStdTime time.Time) (*Document) {
 	// Update value
 	if utils.IsNotNilOrEmpty(value) {
-		d.Value = value
+		d.Value = make([]byte, len(value))
+		copy(d.Value, value)
 	} else {
-		d.Value = ""
+		// Empty slice
+		d.Value = make([]byte, 0)
 	}
 	
 	// Update TTL
@@ -68,10 +90,13 @@ func (d *Document) updateValueAndExpires(
 }
 
 
+/*
+Make this document expired.
+ */
 func (d *Document) Expire() (*Document) {
 	d.Expired = true
 	
-	fmt.Printf("Document Expired: %s \n", d.String())
+	fmt.Printf("Document Expired: %s \n", d.Key)
 	
 	return d
 }

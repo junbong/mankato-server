@@ -7,6 +7,9 @@ func IsNotNilOrEmpty(obj interface{}) bool {
 		case string:
 			return obj != ""
 		
+		case []byte:
+			return len(obj.([]byte)) != 0
+		
 		default:
 			return true
 		}

@@ -134,7 +134,8 @@ func (sr *ServerRouter) GetDocument(
 	// TODO: make result to JSON with lib
 	if exists {
 		docT := doc.(*document.Document)
-		onResultJson(w, docT)
+		w.Header().Add("Content-Type", docT.ContentType)
+		fmt.Fprint(w, string(docT.Value[:]))
 	} else {
 		w.WriteHeader(http.StatusNotFound)
 	}
@@ -148,14 +149,9 @@ func (sr *ServerRouter) CreateOrUpdateDocument(
 	vars := mux.Vars(r)
 	keyOfData := vars["key"]
 	
-	if b, err := ioutil.ReadAll(r.Body); err == nil {
-		var valueOfData string
-		
-		if len(b) > 0 {
-			valueOfData = string(b)
-		} else {
-			valueOfData = ""
-		}
+	if body, err := ioutil.ReadAll(r.Body); err == nil {
+		// Content type from header
+		contentType := r.Header.Get("Content-Type")
 		
 		// TTL option
 		ttl := r.FormValue("ttl")
@@ -167,7 +163,7 @@ func (sr *ServerRouter) CreateOrUpdateDocument(
 			}
 		}
 		
-		doc := sr.Database.PutOrUpdate(keyOfData, valueOfData, expAfterSec)
+		doc := sr.Database.PutOrUpdate(keyOfData, body, contentType, expAfterSec)
 		onResultJson(w, doc)
 		
 	} else {
